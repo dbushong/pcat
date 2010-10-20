@@ -4,7 +4,7 @@
 #include <sys/select.h>
 #include <string.h>
 
-#define DEF_PROCS 4
+#define DEF_PROCS 2
 #define MAX_PROCS 32
 
 #define MAX_LINE_BYTES 65535
@@ -19,15 +19,46 @@ void check_fail(int st, char *err_msg) {
   }
 }
 
-int main(int argc, char* argv[]) {
-  // TODO: getopts()
-  int num_procs = 2;
+void usage() {
+  fprintf(stderr,
+"usage: pcat [-p num-procs] cmd [cmd-arguments]\n"
+"       cmd: stdin line-level parallelism: cmd and any arguments given at the\n"
+"             end of the command line are invoked in parallel, passed some\n" 
+"             subset of standard input lines.  Any strings containing %%%%\n"
+"             will have the process number substituted.\n"
+"       -p: specify number of parallel processes (default: %d)\n", DEF_PROCS
+  );
+  exit(1);
+}
 
-  char **cmd = argv+1, line[MAX_LINE_BYTES], *start, num_buf[3];
-  int i, j, max_fd = 0, done, pipe_in_out[2], fd[MAX_PROCS];
+int main(int argc, char *argv[]) {
+  int num_procs = 0;
+  char **cmd, line[MAX_LINE_BYTES], *start, num_buf[3];
+  int i, j, max_fd = 0, done, pipe_in_out[2], fd[MAX_PROCS], opt, cmdc;
   pid_t child_pid;
   size_t len;
   fd_set wfds;
+
+  while ((opt = getopt(argc, argv, "hp:")) != -1) {
+    switch (opt) {
+      case 'p':
+        num_procs = atoi(optarg);
+        break;
+      default:
+        usage();
+    }
+  }
+
+  // clean up & default num_procs arg
+  if (!num_procs) num_procs = DEF_PROCS;
+  else if (num_procs > MAX_PROCS) num_procs = MAX_PROCS;
+
+  // make sure there's a command
+  if (optind >= argc) usage();
+
+  // the rest of the line is the command and its args
+  cmd  = argv + optind;
+  cmdc = argc - optind;
 
   for (i = 0; i < num_procs; i++) {
     // create pipe to write to child
@@ -43,7 +74,7 @@ int main(int argc, char* argv[]) {
 
       // replace %% with the 01-<num-procs>
       check_fail(sprintf(num_buf, "%02d", i+1), "formatting num failed");
-      for (j = 1; j < argc-1; j++)
+      for (j = 0; j < cmdc; j++)
         if ((start = strstr(cmd[j], "%%")) != NULL) memcpy(start, num_buf, 2);
 
       if (execvp(cmd[0], cmd) < 0) {
