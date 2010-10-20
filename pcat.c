@@ -4,6 +4,7 @@
 #include <sys/select.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
@@ -40,7 +41,7 @@ int main(int argc, char *argv[]) {
   char **cmd, line[MAX_LINE_BYTES], *out_tmpl = NULL,
        out_file[MAX_FILENAME_LEN];
   int num_procs = 0, out_fd, i, max_fd = 0, done, pipe_in_out[2],
-      fd[MAX_PROCS], opt, cmdc;
+      fd[MAX_PROCS], opt, cmdc, ch_status;
   pid_t child_pid;
   size_t len;
   fd_set wfds;
@@ -132,6 +133,9 @@ int main(int argc, char *argv[]) {
 
   for (i = 0; i < num_procs; i++) 
     check_fail(close(fd[i]), "failed to close parent writer");
+
+  // reap child processes
+  while (wait(&ch_status) > 0);
 
   return 0;
 }
