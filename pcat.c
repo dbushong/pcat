@@ -23,8 +23,8 @@ int main(int argc, char* argv[]) {
   // TODO: getopts()
   int num_procs = 2;
 
-  char **cmd = argv+1, line[MAX_LINE_BYTES];
-  int i, max_fd = 0, done, pipe_in_out[2], fd[MAX_PROCS];
+  char **cmd = argv+1, line[MAX_LINE_BYTES], *start, num_buf[3];
+  int i, j, max_fd = 0, done, pipe_in_out[2], fd[MAX_PROCS];
   pid_t child_pid;
   size_t len;
   fd_set wfds;
@@ -40,6 +40,12 @@ int main(int argc, char* argv[]) {
       // in child process
       check_fail(close(PARENT_WRITER), "Couldn't close parent writer in child");
       check_fail(dup2(CHILD_READER, STDIN_FILENO), "Couldn't set file desc");
+
+      // replace %% with the 01-<num-procs>
+      check_fail(sprintf(num_buf, "%02d", i+1), "formatting num failed");
+      for (j = 1; j < argc-1; j++)
+        if ((start = strstr(cmd[j], "%%")) != NULL) memcpy(start, num_buf, 2);
+
       if (execvp(cmd[0], cmd) < 0) {
         perror("Couldn't exec");
         close(CHILD_READER);
