@@ -10,8 +10,8 @@
 #define DEF_PROCS 2
 #define MAX_PROCS 32
 
-#define MAX_LINE_BYTES 65535
-#define MAX_FILE_LEN   1024
+#define MAX_LINE_BYTES   65535
+#define MAX_FILENAME_LEN 1024
 
 #define CHILD_READER  pipe_in_out[0]
 #define PARENT_WRITER pipe_in_out[1]
@@ -37,9 +37,10 @@ void usage() {
 }
 
 int main(int argc, char *argv[]) {
-  int num_procs = 0, out_fd;
-  char **cmd, line[MAX_LINE_BYTES], *out_tmpl = NULL, out_file[MAX_FILE_LEN];
-  int i, max_fd = 0, done, pipe_in_out[2], fd[MAX_PROCS], opt, cmdc;
+  char **cmd, line[MAX_LINE_BYTES], *out_tmpl = NULL,
+       out_file[MAX_FILENAME_LEN];
+  int num_procs = 0, out_fd, i, max_fd = 0, done, pipe_in_out[2],
+      fd[MAX_PROCS], opt, cmdc;
   pid_t child_pid;
   size_t len;
   fd_set wfds;
@@ -82,7 +83,7 @@ int main(int argc, char *argv[]) {
 
       // output file handling
       if (out_tmpl != NULL) {
-        check_fail(sprintf(out_file, out_tmpl, i+1), 
+        check_fail(snprintf(out_file, MAX_FILENAME_LEN, out_tmpl, i+1),
             "formatting outfile failed");
         check_fail(out_fd = open(out_file, O_CREAT | O_WRONLY, 0666),
             "failed to open output file for writing");
