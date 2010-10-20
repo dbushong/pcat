@@ -75,7 +75,8 @@ int main(int argc, char *argv[]) {
       // replace %% with the 01-<num-procs>
       check_fail(sprintf(num_buf, "%02d", i+1), "formatting num failed");
       for (j = 0; j < cmdc; j++)
-        if ((start = strstr(cmd[j], "%%")) != NULL) memcpy(start, num_buf, 2);
+        while ((start = strstr(cmd[j], "%%")) != NULL) 
+          memcpy(start, num_buf, 2);
 
       if (execvp(cmd[0], cmd) < 0) {
         perror("Couldn't exec");

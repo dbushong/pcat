@@ -1,0 +1,8 @@
+pcat - Parallel Cat
+
+Simple C port of a perl script I've had for a while (included) that, given a
+command (with optional args), forks off a number of copies of it and 
+distributes lines from stdin to the child processes.
+
+You may specify "%%" anywhere in the command to have it be replaced with
+the equivalent of sprintf('%02d', <process number starting from 1>)
